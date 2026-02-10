@@ -1,11 +1,11 @@
 # Paths
 BASE_DIRECTORY="."
 LLAMA_CPP_DIR="."
-HF_MODEL_DIR="neuphonic/sven_distilled_180m_pruned_100k_18_11_2025"  # hf link
-MODEL_NAME="sven_distilled_180m_pruned_100k_18_11_2025"
+HF_MODEL_DIR="neuphonic/neutts-nano-french"  # hf link
+MODEL_NAME="neutts-nano-french"
 OUT_DIR="$BASE_DIRECTORY/gguf_models/$MODEL_NAME"
 # CTX=2048
-CALIB_DATA="$BASE_DIRECTORY/CALIBRATION/calibration_data.txt"
+CALIB_DATA="$BASE_DIRECTORY/single-lang-calibration-data/calibration_data_french.txt"
 IMATRIX_THREADS=$(nproc)
 
 # Quantization types to produce
@@ -25,14 +25,14 @@ CONVERT_PY="$LLAMA_CPP_DIR/convert_hf_to_gguf.py"
 IMATRIX_BIN="$LLAMA_CPP_DIR/build/bin/llama-imatrix"
 QUANT_BIN="$LLAMA_CPP_DIR/build/bin/llama-quantize"
 
-BF16_GGUF="$OUT_DIR/${MODEL_NAME}-bf16.gguf"
+BF16_GGUF="$OUT_DIR/${MODEL_NAME}-BF16.gguf"
 IMATRIX_FILE="$OUT_DIR/${MODEL_NAME}.imatrix"
 
 ############################
 # 1. HF -> GGUF (BF16)
 ############################
 
-echo "[1/3] Converting HF model to GGUF (bf16)"
+echo "[1/3] Converting HF model to GGUF (BF16)"
 python3 "$CONVERT_PY" \
   "$HF_MODEL_DIR" \
   --remote \
