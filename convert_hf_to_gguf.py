@@ -662,6 +662,7 @@ class TextModel(ModelBase):
 
                     if (added_tokens_decoder[i].special or self.does_token_look_special(token)) and "<|speech_" not in token:
                         toktypes.append(gguf.TokenType.CONTROL)
+                        print(f"Marking token {repr(token)} (id {i}) as CONTROL token")
                     else:
                         # NOTE: this was added for Gemma.
                         # Encoding and decoding the tokens above isn't sufficient for this case.
@@ -2025,6 +2026,7 @@ class LlamaModel(TextModel):
             self.hparams["num_attention_heads"] = self.hparams.get("num_attention_heads", 32)
 
     def _set_vocab_mistral(self):
+        print("USING MISTRAL VOCAB")
         vocab = MistralVocab(self.dir_model)
         logger.info(
             f"Converting tokenizer {vocab.tokenizer_type} of size {vocab.vocab_size}."
@@ -2083,6 +2085,7 @@ class LlamaModel(TextModel):
             logger.info("Not using a Mistral community chat template. Ensure to perform the tokenization and detokenization via `mistral-common`.")
 
     def set_vocab(self):
+        print("USING LLAMA VOCAB")
         if self.is_mistral_format:
             return self._set_vocab_mistral()
 
@@ -2092,9 +2095,11 @@ class LlamaModel(TextModel):
             self._set_vocab_mistral()
 
         try:
+            print("TRYING SENTENCEPIECE VOCAB")
             self._set_vocab_sentencepiece()
         except FileNotFoundError:
             try:
+                print("TRYING LLAMA HF VOCAB!!! badd aaaa")
                 self._set_vocab_llama_hf()
             except (FileNotFoundError, TypeError):
                 # Llama 3
