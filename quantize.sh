@@ -1,11 +1,11 @@
 # Paths
 BASE_DIRECTORY="."
 LLAMA_CPP_DIR="."
-HF_MODEL_DIR="neuphonic/neutts-nano-french"  # hf link
-MODEL_NAME="neutts-nano-french"
+HF_MODEL_DIR="neuphonic/nano_finetune_de_grpo_500_27_02_2026"  # hf link
+MODEL_NAME="neutts-nano-german-update"
 OUT_DIR="$BASE_DIRECTORY/gguf_models/$MODEL_NAME"
 # CTX=2048
-CALIB_DATA="$BASE_DIRECTORY/single-lang-calibration-data/calibration_data_french.txt"
+CALIB_DATA="$OUT_DIR/calibration_data_german.txt"
 IMATRIX_THREADS=$(nproc)
 
 # Quantization types to produce
