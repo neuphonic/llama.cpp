@@ -202,6 +202,17 @@ class Qwen3Model(Qwen2Model):
 
         super().set_vocab()
 
+    def get_vocab_base(self):
+        tokens, toktypes, tokpre = super().get_vocab_base()
+        # Speech tokens (e.g. <|speech_0|>..<|speech_65535|>) match the <|...|> heuristic in
+        # does_token_look_special() and are not flagged special=True in added_tokens_decoder,
+        # but they must round-trip as text so the downstream TTS pipeline can consume them.
+        toktypes = [
+            gguf.TokenType.USER_DEFINED if tt == gguf.TokenType.CONTROL and "<|speech_" in tok else tt
+            for tok, tt in zip(tokens, toktypes)
+        ]
+        return tokens, toktypes, tokpre
+
     def _find_rerank_config(self):
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(self.dir_model)
