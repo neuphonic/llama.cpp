@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add neuphonic.* metadata from a model's config.json into an existing GGUF file."""
+"""Add neuphonic.* metadata from a HuggingFace model's config.json into an existing GGUF file."""
 
 from __future__ import annotations
 
@@ -66,21 +66,11 @@ def copy_with_extra_kv(
     writer.close()
 
 
-def load_config(config_arg: str) -> dict:
-    """Accept a local path (dir or config.json) or a HuggingFace repo ID (org/model)."""
-    if "/" in config_arg and not Path(config_arg).exists():
-        from huggingface_hub import hf_hub_download
-        local = hf_hub_download(repo_id=config_arg, filename="config.json")
-        with open(local, encoding="utf-8") as f:
-            return json.load(f)
-
-    config_path = Path(config_arg)
-    if config_path.is_dir():
-        config_path = config_path / "config.json"
-    if not config_path.exists():
-        print(f"Error: config not found at {config_path}", file=sys.stderr)
-        sys.exit(1)
-    with open(config_path, encoding="utf-8") as f:
+def load_config(repo_id: str) -> dict:
+    """Fetch config.json from a HuggingFace repo ID (org/model)."""
+    from huggingface_hub import hf_hub_download
+    local = hf_hub_download(repo_id=repo_id, filename="config.json")
+    with open(local, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -88,7 +78,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input",  type=Path, help="Input GGUF file")
     parser.add_argument("output", type=Path, help="Output GGUF file")
-    parser.add_argument("config", type=str,  help="HuggingFace repo ID, local model dir, or path to config.json")
+    parser.add_argument("config", type=str,  help="HuggingFace repo ID (e.g. neuphonic/my-model)")
     args = parser.parse_args()
 
     config = load_config(args.config)
