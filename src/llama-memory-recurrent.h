@@ -4,6 +4,7 @@
 #include "llama-graph.h"
 #include "llama-memory.h"
 
+#include <map>
 #include <set>
 #include <vector>
 
@@ -22,6 +23,7 @@ public:
                          bool   offload,
                      uint32_t   mem_size,
                      uint32_t   n_seq_max,
+                     uint32_t   n_rs_seq,
         const layer_filter_cb & filter);
 
     ~llama_memory_recurrent() = default;
@@ -50,6 +52,8 @@ public:
     llama_pos seq_pos_min(llama_seq_id seq_id) const override;
     llama_pos seq_pos_max(llama_seq_id seq_id) const override;
 
+    std::map<ggml_backend_buffer_type_t, size_t> memory_breakdown() const override;
+
     bool prepare(const std::vector<llama_ubatch> & ubatches);
 
     // find a contiguous slot of memory cells and emplace the ubatch there
@@ -65,6 +69,14 @@ public:
     uint32_t head = 0; // the location where the batch will be placed in the cache (see find_slot())
     uint32_t size = 0; // total number of cells, shared across all sequences
     uint32_t used = 0; // used cells (i.e. at least one seq_id)
+
+    // number of recurrent-state snapshots per seq for rollback; tensors are widened to (1 + n_rs_seq) groups
+    uint32_t n_rs_seq = 0;
+
+    // per-seq rollback index
+    std::vector<uint32_t> rs_idx;
+
+    void set_rs_idx(llama_seq_id seq_id, uint32_t idx);
 
     // computed before each graph build
     uint32_t n = 0;
@@ -106,8 +118,8 @@ private:
 
     const uint32_t n_seq_max = 1;
 
-    std::vector<ggml_context_ptr>        ctxs;
-    std::vector<ggml_backend_buffer_ptr> bufs;
+    // ggml contexts for the KV cache along with the allocated backend buffers:
+    std::vector<std::pair<ggml_context_ptr, ggml_backend_buffer_ptr>> ctxs_bufs;
 
     size_t total_size() const;
 

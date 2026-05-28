@@ -112,7 +112,7 @@ static bool ggml_mem_ranges_add_dst(ggml_mem_ranges_t mrs, const ggml_tensor * t
 }
 
 bool ggml_mem_ranges_add(ggml_mem_ranges_t mrs, const ggml_tensor * tensor) {
-    for (int i = 0; i < GGML_MAX_DIMS; i++) {
+    for (int i = 0; i < GGML_MAX_SRC; i++) {
         if (tensor->src[i]) {
             ggml_mem_ranges_add_src(mrs, tensor->src[i]);
         }
@@ -173,7 +173,7 @@ static bool ggml_mem_ranges_check_dst(ggml_mem_ranges_t mrs, const ggml_tensor *
 }
 
 bool ggml_mem_ranges_check(ggml_mem_ranges_t mrs, const ggml_tensor * tensor) {
-    for (int i = 0; i < GGML_MAX_DIMS; i++) {
+    for (int i = 0; i < GGML_MAX_SRC; i++) {
         if (tensor->src[i]) {
             if (!ggml_mem_ranges_check_src(mrs, tensor->src[i])) {
                 return false;
@@ -256,8 +256,6 @@ static std::vector<int> ggml_metal_graph_optimize_reorder(const std::vector<node
 
     // perform reorders only across these types of ops
     // can be expanded when needed
-    // IMPORTANT: do not add ops such as GGML_OP_CPY or GGML_OP_SET_ROWS
-    //            the dependencies from such ops are not always represented in the graph
     const auto & h_safe = [](ggml_op op) {
         switch (op) {
             case GGML_OP_MUL_MAT:
@@ -266,13 +264,26 @@ static std::vector<int> ggml_metal_graph_optimize_reorder(const std::vector<node
             case GGML_OP_NORM:
             case GGML_OP_RMS_NORM:
             case GGML_OP_GROUP_NORM:
+            case GGML_OP_L2_NORM:
             case GGML_OP_SUM_ROWS:
+            case GGML_OP_SSM_CONV:
+            case GGML_OP_SSM_SCAN:
+            case GGML_OP_CLAMP:
+            case GGML_OP_TRI:
+            case GGML_OP_DIAG:
             case GGML_OP_MUL:
             case GGML_OP_ADD:
+            case GGML_OP_SUB:
             case GGML_OP_DIV:
             case GGML_OP_GLU:
             case GGML_OP_SCALE:
+            case GGML_OP_UNARY:
             case GGML_OP_GET_ROWS:
+            case GGML_OP_SET_ROWS:
+            case GGML_OP_SET:
+            case GGML_OP_CPY:
+            case GGML_OP_CONT:
+            case GGML_OP_REPEAT:
                 return true;
             default:
                 return ggml_op_is_empty(op);
@@ -312,7 +323,7 @@ static std::vector<int> ggml_metal_graph_optimize_reorder(const std::vector<node
             h_add(mrs1, node0);
 
             // that many nodes forward to search for a concurrent node
-            constexpr int N_FORWARD = 8;
+            constexpr int N_FORWARD = 64;
 
             for (int i1 = i0 + 1; i1 < i0 + N_FORWARD && i1 < n; i1++) {
                 if (used[i1]) {
@@ -383,6 +394,7 @@ void ggml_graph_optimize(ggml_cgraph * gf) {
         // fuse only ops that start with these operations
         // can be expanded when needed
         if (node.op() == GGML_OP_ADD ||
+            node.op() == GGML_OP_NORM ||
             node.op() == GGML_OP_RMS_NORM) {
             ops[0] = node.op();
 
@@ -392,6 +404,7 @@ void ggml_graph_optimize(ggml_cgraph * gf) {
                 // can be expanded when needed
                 if (gf->nodes[f]->op != GGML_OP_ADD &&
                     gf->nodes[f]->op != GGML_OP_MUL &&
+                    gf->nodes[f]->op != GGML_OP_NORM &&
                     gf->nodes[f]->op != GGML_OP_RMS_NORM) {
                     break;
                 }

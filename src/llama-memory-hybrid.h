@@ -34,6 +34,7 @@ public:
                  uint32_t   rs_size,
                             /* common */
                  uint32_t   n_seq_max,
+                 uint32_t   n_rs_seq,
                      bool   offload,
                      bool   unified,
                             /* layer filters */
@@ -67,6 +68,8 @@ public:
 
     llama_pos seq_pos_min(llama_seq_id seq_id) const override;
     llama_pos seq_pos_max(llama_seq_id seq_id) const override;
+
+    std::map<ggml_backend_buffer_type_t, size_t> memory_breakdown() const override;
 
     // state write/load
 
